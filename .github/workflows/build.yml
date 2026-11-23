@@ -1,0 +1,71 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Read app settings
+        id: app
+        run: |
+          NAME=$(grep -oP 'val appName = "\K[^"]+' app/build.gradle.kts | tr -d ' ')
+          VERSION=$(grep -oP 'val appVersion = "\K[^"]+' app/build.gradle.kts)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        env:
+          BUILD_NUMBER: ${{ github.run_number }}
+        run: ./gradlew assembleRelease lintRelease --stacktrace
+
+      - name: Name the APK
+        id: apk
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NAME: ${{ steps.app.outputs.name }}
+          VERSION: ${{ steps.app.outputs.version }}
+          BUILD: ${{ github.run_number }}
+        run: |
+          # First build of a new version: App-1.0.apk, tag v1.0
+          # Later builds:                 App-1.0-12.apk, tag v1.0-12
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            FILE="$NAME-$VERSION-$BUILD.apk"; TAG="v$VERSION-$BUILD"
+          else
+            FILE="$NAME-$VERSION.apk"; TAG="v$VERSION"
+          fi
+          cp app/build/outputs/apk/release/app-release.apk "$FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.apk.outputs.tag }}" "${{ steps.apk.outputs.file }}" \
+            --title "${{ steps.apk.outputs.tag }}" --notes "Build ${{ github.run_number }}"
+          echo "### Download" >> "$GITHUB_STEP_SUMMARY"
+          echo "https://github.com/${{ github.repository }}/releases/download/${{ steps.apk.outputs.tag }}/${{ steps.apk.outputs.file }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-release.html
+          if-no-files-found: ignore
