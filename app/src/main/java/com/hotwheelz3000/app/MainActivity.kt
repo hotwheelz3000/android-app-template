@@ -113,6 +113,7 @@ class MainActivity : ComponentActivity() {
             webView.restoreState(savedInstanceState)
         } else {
             webView.loadUrl(BuildConfig.START_URL)
+            UpdateChecker.check(this)
         }
     }
 

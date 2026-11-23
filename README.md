@@ -12,6 +12,12 @@ Android version of my-ios-app-template. No Android Studio needed: push to `main`
    - `appVersion` - bump for a new version
 3. Put page tweaks in `app/src/main/assets/inject.js` (runs on every page, like the iOS injected JS).
 4. Push. The direct APK link shows in the Actions run summary.
+5. In this README, replace `REPO` in the Obtainium link below with the new repo's name.
+
+## Builds
+
+- `main`: syntax-checks `inject.js`, builds, lints, publishes a release
+- Any other branch or PR: same checks and build, no release. The APK is in the run's **test-apk** artifact.
 
 ## What it does
 
@@ -30,4 +36,11 @@ Android version of my-ios-app-template. No Android Studio needed: push to `main`
 
 Open the APK link on the phone and allow installs from your browser. Every build uses the same key (`keystore/sideload.jks`), so new versions install over old ones and keep your data. This key is for sideloading only, not the Play Store.
 
-For automatic updates, add the repo to [Obtainium](https://github.com/ImranR98/Obtainium). It reads GitHub releases directly.
+## Updates
+
+- **In the app:** on launch it checks the latest release's `update.json` and offers to download a newer build.
+- **Obtainium:** with [Obtainium](https://github.com/ImranR98/Obtainium) installed, open this link on the phone:
+
+```
+obtainium://add/https://github.com/hotwheelz3000/REPO
+```

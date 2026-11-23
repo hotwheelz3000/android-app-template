@@ -15,6 +15,12 @@ val appVersion = "1.0"                       // bump for a new version
 // Build number comes from GitHub Actions (run number); 1 for local builds
 val buildNumber = (System.getenv("BUILD_NUMBER") ?: "1").toInt()
 
+// In-app update check reads update.json from this repo's latest release.
+// Filled in automatically on GitHub Actions; empty (off) for local builds.
+val repo = System.getenv("GITHUB_REPOSITORY") ?: ""
+val updateUrl = if (repo.isNotEmpty())
+    "https://github.com/$repo/releases/latest/download/update.json" else ""
+
 android {
     namespace = "com.hotwheelz3000.app"
     compileSdk = 35
@@ -28,6 +34,7 @@ android {
 
         resValue("string", "app_name", appName)
         buildConfigField("String", "START_URL", "\"$startUrl\"")
+        buildConfigField("String", "UPDATE_URL", "\"$updateUrl\"")
     }
 
     // Same key every build, so new APKs install over old ones.
