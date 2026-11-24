@@ -15,7 +15,11 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
 class MainActivity : ComponentActivity() {
@@ -39,7 +43,13 @@ class MainActivity : ComponentActivity() {
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Light status/nav bar icons on the dark background
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
 
         webView = WebView(this)
         refresh = SwipeRefreshLayout(this).apply {
@@ -47,6 +57,14 @@ class MainActivity : ComponentActivity() {
             setOnRefreshListener { webView.reload() }
         }
         setContentView(refresh)
+
+        // Keep the page between the status bar and nav bar (and above the keyboard)
+        ViewCompat.setOnApplyWindowInsetsListener(refresh) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(bars.left, bars.top, bars.right, maxOf(bars.bottom, ime.bottom))
+            WindowInsetsCompat.CONSUMED
+        }
 
         // Only allow pull-to-refresh when the page is scrolled to the top
         refresh.setOnChildScrollUpCallback { _, _ -> webView.scrollY > 0 }
